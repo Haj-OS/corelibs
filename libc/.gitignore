@@ -1,0 +1,4 @@
+*.o
+arch/*/syscalls.s
+gensyscalls
+libc.a
