@@ -27,7 +27,7 @@ $(BIN):
 	@echo "  CC $@"
 	@$(CC) $@.c -o $@
 
-$(TEST_BIN): $(LIB)
+$(TEST_BIN): $(LIB) test.o
 	@echo "  CC $@"
 	@$(CC) $(CFLAGS) -static -nostdlib -nostartfiles test.c $(CRT) $(LIB) -o $@
 

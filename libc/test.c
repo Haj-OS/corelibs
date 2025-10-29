@@ -3,6 +3,6 @@
 
 int main()
 {
-    print("Alignment of align_max_t: {d}\n", alignof(max_align_t));
+    int out = print("I love my {x}\n", 0xbabe);
     return 0;
 }
