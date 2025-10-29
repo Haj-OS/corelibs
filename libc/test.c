@@ -1,7 +1,8 @@
-#include <unistd.h>
+#include <stdio.h>
+#include <stdalign.h>
 
 int main()
 {
-    write(STDOUT_FILENO, "Hello World\n", 13);
+    print("Alignment of align_max_t: {d}\n", alignof(max_align_t));
     return 0;
 }

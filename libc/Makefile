@@ -2,13 +2,14 @@
 .SUFFIXES: .c .s
 
 TARGET = x86_64
-CFLAGS = -g -Iinclude -fno-stack-protector -nostdinc
+CFLAGS = -g -Iinclude -fno-stack-protector -nostdinc \
+		 -Wno-builtin-declaration-mismatch
 BIN = gensyscalls
 TEST_BIN = test
 LIB = libc.a
 
 GEN = arch/$(TARGET)/syscalls.s
-OBJS = arch/$(TARGET)/syscalls.o src/libc_start.o src/errno.o
+OBJS = arch/$(TARGET)/syscalls.o src/libc_start.o src/errno.o src/stdio.o
 CRT = arch/$(TARGET)/crti.o arch/$(TARGET)/crtn.o arch/$(TARGET)/start.o
 
 all: $(GEN) $(LIB) $(CRT) $(TEST_BIN)

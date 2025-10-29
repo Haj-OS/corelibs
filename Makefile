@@ -5,7 +5,7 @@ CC = cc
 AS = as
 AR = ar
 
-PROJS = libc
+PROJS = libc libstd
 
 all: $(PROJS)
 
