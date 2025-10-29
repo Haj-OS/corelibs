@@ -1,4 +1,5 @@
 *.o
 arch/*/syscalls.s
 gensyscalls
+test
 libc.a
