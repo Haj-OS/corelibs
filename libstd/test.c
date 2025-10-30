@@ -26,6 +26,9 @@ int main()
     a.b = 0;
     vec_push(&v, &a);
 
+    struct foo *last = vec_back(&v);
+    last->b = 7;
+
     struct foo tmp;
     vec_foreach_typed(&v, i, tmp, struct foo) {
         print("{d} {d}\n", tmp.a, tmp.b);
