@@ -8,8 +8,8 @@
 
 struct vec {
     struct alloc* alloc;
-    struct slice items; /* data + len */
-    usize cap;
+    struct slice items; /* data + cap */
+    usize size;
     /* item unlikely be that big */
     u32 item_size, alignment;
 };
@@ -21,12 +21,8 @@ struct vec {
 
 #define vec_foreach_typed(v, i, n, t)                          \
     for (usize i = 0;                                          \
-         i < (v)->items.len && vec_get_into(v, i, &n) != null; \
+         i < (v)->size && vec_get_into(v, i, &n) != null; \
          i++)
-
-// #define vec_foreach_typed(v, i, n, t)            \
-//     for (usize i = 0, t n = vec_get_typed(v, t, 0); \
-//          i < v->items.len; n = vec_get_typed(v, i++, t))
 
 void vec_init(struct vec *vec, struct alloc* alloc, usize item_size);
 void vec_init_aligned(struct vec *vec, struct alloc *alloc, usize item_size,
