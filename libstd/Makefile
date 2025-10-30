@@ -3,7 +3,7 @@
 
 # needed for libc wiring
 TARGET = x86_64
-CFLAGS = -g -Iinclude -I../libc/include -nostdinc
+CFLAGS = -g -Iinclude -fno-stack-protector -I../libc/include -nostdinc
 TEST_BIN = test
 LIB = libstd.a
 
@@ -15,7 +15,7 @@ $(LIB): $(OBJS)
 	@echo "  AR $@"
 	@$(AR) rcs $@ $(OBJS)
 
-$(TEST_BIN): $(LIB)
+$(TEST_BIN): $(LIB) test.o
 	@echo "  CC $@"
 	@$(CC) $(CFLAGS) -static -nostdlib -nostartfiles test.c $(LIB) \
 		../libc/arch/$(TARGET)/start.o ../libc/libc.a -o $@

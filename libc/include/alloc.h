@@ -14,15 +14,14 @@ struct alloc_vtable {
     void *(*free)(void *ctx, void *ptr);
 };
 
-void *alloc_mem(struct alloc *allocator);
-void *alloc_zero(struct alloc *allocator);
-void *alloc_aligned(struct alloc *allocator, usize alignment);
-void *alloc_aligned_zero(struct alloc *allocator, usize alignment);
+void *alloc_mem(struct alloc *allocator, usize size);
+void *alloc_zero(struct alloc *allocator, usize size);
+void *alloc_aligned(struct alloc *allocator, usize size, usize alignment);
+void *alloc_aligned_zero(struct alloc *allocator, usize size, usize alignment);
 
 void *alloc_resize(struct alloc *allocator, void *ptr, usize new_size);
 void *alloc_resize_aligned(struct alloc *allocator, void *ptr, usize new_size,
     usize alignment);
-
 void alloc_free(struct alloc *allocator, void *ptr);
 
 #endif
