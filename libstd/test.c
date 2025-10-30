@@ -2,6 +2,6 @@
 
 int main()
 {
-    print("Talon is a cutie\n");
+    print("I love my sharkie <3\n");
     return 0;
 }
