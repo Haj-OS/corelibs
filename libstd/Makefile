@@ -3,6 +3,7 @@
 
 # needed for libc wiring
 TARGET = x86_64
+PREFIX = /usr/local
 CFLAGS = -g -Iinclude -fno-stack-protector -I../libc/include -nostdinc
 TEST_BIN = test
 LIB = libstd.a
@@ -27,4 +28,13 @@ $(TEST_BIN): $(LIB) test.o
 clean:
 	rm -f $(LIB) $(OBJS) $(TEST_BIN)
 
-.PHONY: all clean
+INLIB = $(DESTDIR)$(PREFIX)/lib
+ININC = $(DESTDIR)$(PREFIX)/include/std
+
+install: all
+	install -d $(INLIB)
+	install -d $(ININC)
+	install -m 755 $(LIB) $(INLIB)/$(LIB)
+	cp -rv include/* $(ININC)
+
+.PHONY: all clean install

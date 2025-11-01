@@ -2,6 +2,7 @@
 .SUFFIXES: .c .s
 
 TARGET = x86_64
+PREFIX = /usr/local
 CFLAGS = -g -Iinclude -fno-stack-protector -nostdinc \
 		 -Wno-builtin-declaration-mismatch
 BIN = gensyscalls
@@ -43,4 +44,16 @@ $(TEST_BIN): $(LIB) test.o
 clean:
 	rm -f $(BIN) $(LIB) $(GEN) $(OBJS) $(CRT) $(TEST_BIN)
 
-.PHONY: all clean
+INLIB = $(DESTDIR)$(PREFIX)/lib
+ININC = $(DESTDIR)$(PREFIX)/include
+
+install: all
+	install -d $(INLIB)
+	install -d $(ININC)
+	install -m 755 $(LIB) $(INLIB)/$(LIB)
+	install -m 644 arch/$(TARGET)/start.o $(INLIB)/crt1.o
+	install -m 644 arch/$(TARGET)/crtn.o $(INLIB)/crtn.o
+	install -m 644 arch/$(TARGET)/crti.o $(INLIB)/crti.o
+	cp -rv include/* $(ININC)
+
+.PHONY: all clean install
