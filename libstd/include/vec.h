@@ -43,5 +43,6 @@ void vec_pop(struct vec *vec);
 void vec_remove(struct vec *vec, usize at);
 
 void vec_reserve(struct vec *vec, usize capacity);
+void vec_shrink_to_fit(struct vec *vec);
 
 #endif

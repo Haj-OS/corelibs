@@ -2,11 +2,6 @@
 #include <vec.h>
 #include <alloc/buffer.h>
 
-struct foo {
-    int a;
-    int b;
-};
-
 int main()
 {
     unsigned char buffer[128];
@@ -14,24 +9,31 @@ int main()
     struct alloc alloc = buffer_alloc_init(&ba, buffer, sizeof(buffer));
 
     struct vec v;
-    vec_init_typed(&v, &alloc, struct foo);
+    vec_init_typed(&v, &alloc, int);
 
-    struct foo a = {
-        .a = 4,
-        .b = 3
-    };
+    int a;
 
+    a = 7;
     vec_push(&v, &a);
-    a.a = 7;
-    a.b = 0;
+    a = 3;
     vec_push(&v, &a);
+    a = 4;
+    vec_insert(&v, 1, &a);
+    a = 69;
+    vec_fill(&v, &a);
 
-    struct foo *last = vec_back(&v);
-    last->b = 7;
+    vec_pop(&v);
+    vec_remove(&v, 4);
+    vec_remove(&v, 13);
 
-    struct foo tmp;
+    vec_rotate(&v, -11);
+    vec_shrink_to_fit(&v);
+
+    int tmp;
     vec_foreach_typed(&v, i, tmp, struct foo) {
-        print("{d} {d}\n", tmp.a, tmp.b);
+        print("{d}\n", tmp);
     }
+
+    print("{d} {d}\n", v.size,  v.items.len / v.item_size);
     return 0;
 }
