@@ -16,7 +16,7 @@ $(LIB): $(OBJS)
 	@echo "  AR $@"
 	@$(AR) rcs $@ $(OBJS)
 
-$(TEST_BIN): $(LIB)
+$(TEST_BIN): $(LIB) test.o
 	@echo "  CC $@"
 	@$(CC) $(CFLAGS) -static -nostdlib -nostartfiles test.c $(LIB) \
 		../libc/arch/$(TARGET)/start.o ../libc/libc.a -o $@

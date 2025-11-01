@@ -61,6 +61,11 @@ static int print_num(int num, char mode)
     int wrote = 0;
     bool sign = false;
 
+    if (num == 0) {
+        *iter-- = '0';
+        wrote++;
+    }
+
     switch (mode) {
     case 'x':
     {

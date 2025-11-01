@@ -10,7 +10,8 @@ TEST_BIN = test
 LIB = libc.a
 
 GEN = arch/$(TARGET)/syscalls.s
-OBJS = arch/$(TARGET)/syscalls.o src/libc_start.o src/errno.o src/stdio.o
+OBJS = arch/$(TARGET)/syscalls.o src/libc_start.o src/errno.o src/stdio.o \
+	   src/stdalign.o src/alloc.o src/string.o src/alloc/buffer.o
 CRT = arch/$(TARGET)/crti.o arch/$(TARGET)/crtn.o arch/$(TARGET)/start.o
 
 all: $(GEN) $(LIB) $(CRT) $(TEST_BIN)
