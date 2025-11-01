@@ -21,7 +21,7 @@ struct vec {
 
 #define vec_foreach_typed(v, i, n, t)                          \
     for (usize i = 0;                                          \
-         i < (v)->size && vec_get_into(v, i, &n) != null; \
+         i < (v)->size && vec_get_into(v, i, &n) != NULL;      \
          i++)
 
 void vec_init(struct vec *vec, struct alloc* alloc, usize item_size);
