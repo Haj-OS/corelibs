@@ -6,7 +6,7 @@ AS = as
 AR = ar
 PREFIX = /usr/local
 
-PROJS = libc libstd
+PROJS = libc libstd hajmk 
 
 all: $(PROJS)
 
