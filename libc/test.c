@@ -5,7 +5,7 @@
 int main()
 {
     char buffer[32];
-    sprint(buffer, 32, "{x} + {x} = {x}\n", 0xFF, 0xFF, 0xFF + 0xFF);
+    sprint(buffer, 32, "Hello, {s}!\n", "World");
     print(buffer);
 
     return 0;

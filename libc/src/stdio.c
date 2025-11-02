@@ -47,6 +47,7 @@ static struct buf *current = null;
 static const char* handle_fmt(const char *fmt, int *wrote, va_list list);
 /* returns 0 when ran out of space */
 static int print_num(int num, char mode);
+static int print_str(const char *str, int optional_len);
 /* return false when ran out of space */
 static bool putc(char c);
 static bool flush_current();
@@ -92,6 +93,7 @@ int vfprint(int fd, const char *fmt, va_list list)
         tmp.size = BUFSIZ;
         tmp.data = tmp_buf;
         tmp.flags = FLUSHABLE;
+        current = &tmp;
         flush = true;
     }
 
@@ -179,6 +181,8 @@ int vaprint(struct alloc *allocator, const char *fmt, va_list list)
 
 static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
 {
+    int len = 0;
+
     switch (fmt[0]) {
     case 'd':
     case 'b':
@@ -192,6 +196,17 @@ static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
             return NULL;
         *wrote += test - 1;
         break;
+    }
+    case '*':
+        len = va_arg(list, int);
+        fmt++;
+    case 's':
+    {
+        fmt++;
+        int test = print_str(va_arg(list, char*), len);
+        if (test == 0)
+            return NULL;
+        *wrote += test;
     }
     }
 
@@ -255,6 +270,28 @@ static int print_num(int num, char mode)
     }
 
     return wrote;
+}
+
+static int print_str(const char *str, int optional_len)
+{
+    int i;
+
+    if (str == null)
+        str = "(nil)";
+
+    if (optional_len) {
+        for (i = 0; i < optional_len && str[i] != 0; i++) {
+            if (!putc(str[i]))
+                return 0;
+        }
+    } else {
+        for (i = 0; str[i] != 0; i++) {
+            if (!putc(str[i]))
+                return 0;
+        }
+    }
+
+    return i;
 }
 
 static bool putc(char c)

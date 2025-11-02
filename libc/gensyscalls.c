@@ -2,6 +2,7 @@
 #include <string.h>
 #include <sys/cdefs.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 struct syscall {
     const char *name;
@@ -11,6 +12,8 @@ struct syscall {
 static struct syscall table[] = {
     {"read",    0},
     {"write",   1},
+    {"open",    2},
+    {"close",   3},
     {"exit",    60},
     {0}
 };
@@ -51,6 +54,19 @@ int main(int argc, char **argv)
 
     fclose(f);
 #else
-#error "No buffered IO yet"
+    int fd = open(path_buf, O_WRONLY | O_CLOEXEC | O_CREAT | O_APPEND);
+
+    struct syscall *iter = table;
+
+    while (iter->name) {
+        fprint(fd, ".global {s}\n"
+                   "{s}:\n"
+                   "    mov ${d}, %rax\n"
+                   "    jmp __syscall\n\n", iter->name, iter->name,
+            iter->opcode);
+        iter++;
+    }
+
+    close(fd);
 #endif
 }

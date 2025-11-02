@@ -53,3 +53,12 @@ void *memmove(void *dst, const void *src, usize n)
 
     return dst;
 }
+
+int strcmp(const char *s1, const char *s2)
+{
+	while (*s1 == *s2++)
+		if (*s1++ == 0)
+			return 0;
+
+	return (*(u8*)s1 - *(u8*)--s2);
+}
