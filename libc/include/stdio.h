@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <alloc.h>
+#include <stdarg.h>
 
 #define BUFSIZ 4096
 
@@ -29,8 +30,12 @@
  * p - pointer
  */
 int print(const char *fmt, ...);
+int vprint(const char *fmt, va_list list);
 int fprint(int fd, const char *fmt, ...);
-int sprint(usize size, char buf[static size], const char *fmt, ...);
+int vfprint(int fd, const char *fmt, va_list list);
+int sprint(char *buf, usize size, const char *fmt, ...);
+int vsprint(char *buf, usize size, const char *fmt, va_list list);
 int aprint(struct alloc *allocator, const char *fmt, ...);
+int vaprint(struct alloc *allocator, const char *fmt, va_list list);
 
 #endif

@@ -1,40 +1,180 @@
+#include <stdalign.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
 
-struct buf {
-    int fd, offset;
-    char data[BUFSIZ];
+#ifdef BUFSIZ
+#undef BUFSIZ
+#define BUFSIZ 1024
+#endif
+
+enum buf_flags {
+    FLUSHABLE = 1 << 0,
+    RESIZABLE = 1 << 1,
 };
 
-static struct buf outbuf = { 0 };
+struct buf {
+    void *ctx;
+    int fd, offset, flags, size;
+    char *data;
+};
+
+static char stdout_buf[BUFSIZ];
+static char stderr_buf[BUFSIZ];
+
+static struct buf outbuf = {
+    .ctx = null,
+    .fd = STDOUT_FILENO,
+    .flags = FLUSHABLE,
+    .offset = 0,
+    .size = BUFSIZ,
+    .data = stdout_buf,
+};
+
+static struct buf errbuf = {
+    .ctx = null,
+    .fd = STDERR_FILENO,
+    .flags = FLUSHABLE,
+    .offset = 0,
+    .size = BUFSIZ,
+    .data = stderr_buf,
+};
+
+static struct buf *current = null;
+
+/* returns null when ran out of space */
 static const char* handle_fmt(const char *fmt, int *wrote, va_list list);
+/* returns 0 when ran out of space */
 static int print_num(int num, char mode);
-static void flush_unless(int new_fd);
-static void putc(char c);
+/* return false when ran out of space */
+static bool putc(char c);
+static bool flush_current();
+
 
 int print(const char *fmt, ...)
 {
+    va_list l;
+    va_start(l, fmt);
+    int n = vprint(fmt, l);
+    va_end(l);
+
+    return n;
+}
+
+int vprint(const char *fmt, va_list list)
+{
+    return vfprint(STDOUT_FILENO, fmt, list);
+}
+
+int fprint(int fd, const char *fmt, ...)
+{
+    va_list l;
+    va_start(l, fmt);
+    int n = vfprint(fd, fmt, l);
+    va_end(l);
+
+    return n;
+}
+
+int vfprint(int fd, const char *fmt, va_list list)
+{
+    char tmp_buf[BUFSIZ];
+    bool flush = false;
+    struct buf tmp = { 0 };
+
+    if (fd == STDOUT_FILENO) {
+        current = &outbuf;
+    } else if (fd == STDERR_FILENO) {
+        current = &errbuf;
+    } else if (fd > 0) {
+        tmp.fd = fd;
+        tmp.size = BUFSIZ;
+        tmp.data = tmp_buf;
+        tmp.flags = FLUSHABLE;
+        flush = true;
+    }
+
     int wrote = 0;
     char c;
-    va_list list;
-    va_start(list, fmt);
 
-    flush_unless(0);
     for (; (c = *fmt); fmt++, wrote++) {
         if (c == '{') {
             fmt++;
-            fmt = handle_fmt(fmt, &wrote, list);
+            const char *test = handle_fmt(fmt, &wrote, list);
+            if (test == null)
+                return wrote;
+            fmt = test;
             continue;
         }
 
-        putc(c);
+        if (!putc(c))
+            return wrote;
     }
 
-    va_end(list);
+    if (flush)
+        flush_current();
+
+    current = null;
 
     return wrote;
+}
+
+int sprint(char *buf, usize size, const char *fmt, ...)
+{
+    va_list l;
+    va_start(l, fmt);
+    int n = vsprint(buf, size, fmt, l);
+    va_end(l);
+
+    return n;
+}
+
+int vsprint(char *buf, usize size, const char *fmt, va_list list)
+{
+    struct buf tmp = {
+        .ctx = null,
+        .fd = -1,
+        .flags = 0,
+        .offset = 0,
+        .size = size - 1,
+        .data = buf,
+    };
+
+    current = &tmp;
+
+    int n = vfprint(tmp.fd, fmt, list);
+    buf[n] = 0;
+
+    return n;
+}
+
+int aprint(struct alloc *allocator, const char *fmt, ...)
+{
+    va_list l;
+    va_start(l, fmt);
+    int n = vaprint(allocator, fmt, l);
+    va_end(l);
+
+    return n;
+}
+
+int vaprint(struct alloc *allocator, const char *fmt, va_list list)
+{
+    struct buf tmp = {
+        .ctx = null,
+        .fd = -1,
+        .flags = 0,
+        .offset = 0,
+        .size = BUFSIZ,
+        .data = alloc_aligned(allocator, BUFSIZ, alignof(char)),
+    };
+
+    if (tmp.data == null) return 0;
+
+    current = &tmp;
+
+    return vfprint(tmp.fd, fmt, list);
 }
 
 static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
@@ -47,10 +187,14 @@ static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
     {
         char mode = *fmt++;
         int num = va_arg(list, int);
-        *wrote += print_num(num, mode) - 1;
+        int test = print_num(num, mode);
+        if (test == 0)
+            return NULL;
+        *wrote += test - 1;
         break;
     }
     }
+
     return fmt;
 }
 
@@ -106,32 +250,43 @@ static int print_num(int num, char mode)
     }
 
     for (int i = 0; i < wrote; i++) {
-        putc(iter[i]);
+        if (!putc(iter[i]))
+            return 0;
     }
 
     return wrote;
 }
 
-static void flush_unless(int new_fd)
+static bool putc(char c)
 {
-    if (new_fd != outbuf.fd) {
-        write(outbuf.fd, outbuf.data, outbuf.offset);
-        outbuf.offset = 0;
-        outbuf.fd = new_fd;
-    }
+    if (current->offset + 1 == current->size)
+        if (!flush_current()) return false;
+
+    current->data[current->offset++] = c;
+
+    if (c == '\n')
+        flush_current(); /* attempt flush */
+
+    return true;
 }
 
-static void putc(char c)
+static bool flush_current()
 {
-    if (outbuf.offset + 1 == BUFSIZ) {
-        write(outbuf.fd, outbuf.data, outbuf.offset);
-        outbuf.offset = 0;
+    if (current->flags & FLUSHABLE) {
+        write(current->fd, current->data, current->offset);
+        current->offset = 0;
+        return true;
+    } else if (current->flags & RESIZABLE) {
+        struct alloc *allocator = current->ctx;
+        if (allocator == null) return false;
+
+        current->size *= 2;
+        current->data = alloc_resize_aligned(allocator, current->data, current->size,
+            alignof(char));
+        if (current->data == null) return false;
+
+        return true;
     }
 
-    outbuf.data[outbuf.offset++] = c;
-
-    if (c == '\n') {
-        write(outbuf.fd, outbuf.data, outbuf.offset);
-        outbuf.offset = 0;
-    }
+    return false;
 }
