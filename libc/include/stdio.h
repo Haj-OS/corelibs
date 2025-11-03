@@ -8,10 +8,7 @@
 #define BUFSIZ 4096
 
 /* Simple print formatting functions, inspired by Zig format syntax:
- * {[*][flag][size modifier]mode}
- *
- * flag:
- * u - unsigned
+ * {[*][size modifier]mode}
  *
  * size modifier:
  * b - byte (8 bits)
@@ -21,6 +18,7 @@
  * 
  * modes:
  * d - int
+ * u - unsigned int
  * b - int (binary)
  * o - int (octal)
  * x - int (hexadecimal)
