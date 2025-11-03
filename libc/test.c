@@ -4,9 +4,6 @@
 
 int main()
 {
-    char buffer[32];
-    sprint(buffer, 32, "Hello, {s}!\n", "World");
-    print(buffer);
-
+    print("{b}\n", 0x896ed9);
     return 0;
 }

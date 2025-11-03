@@ -21,7 +21,7 @@
  * u - unsigned int
  * b - int (binary)
  * o - int (octal)
- * x - int (hexadecimal)
+ * x - int (hexadecimal) (X for uppercase)
  * c - char
  * s - string, or {*s}
  * a - slice, optional style (one of d, b, o, x, s) e.g. {ax}, {as}

@@ -46,11 +46,12 @@ static struct buf *current = null;
 /* returns null when ran out of space */
 static const char* handle_fmt(const char *fmt, int *wrote, va_list list);
 /* returns 0 when ran out of space */
-static int print_num(int num, char mode);
+static int print_num(int64_t num, char mode);
 static int print_str(const char *str, int optional_len);
 /* return false when ran out of space */
 static bool putc(char c);
 static bool flush_current();
+static i64 load_num(char size, va_list list);
 
 
 int print(const char *fmt, ...)
@@ -181,39 +182,62 @@ int vaprint(struct alloc *allocator, const char *fmt, va_list list)
 
 static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
 {
-    int len = 0;
+    /* ignore empty */
+    if (fmt[0] == '}')
+        return fmt;
 
-    switch (fmt[0]) {
-    case 'd':
-    case 'b':
-    case 'o':
-    case 'x':
-    {
-        char mode = *fmt++;
-        int num = va_arg(list, int);
-        int test = print_num(num, mode);
-        if (test == 0)
+    char size_mod = 'w';
+
+    /* expect s */
+    if (fmt[0] == '*') {
+        if (fmt[1] != 's')
             return NULL;
-        *wrote += test - 1;
-        break;
-    }
-    case '*':
-        len = va_arg(list, int);
-        fmt++;
-    case 's':
-    {
-        fmt++;
+
+        int len = va_arg(list, int);
         int test = print_str(va_arg(list, char*), len);
         if (test == 0)
             return NULL;
+        
         *wrote += test;
+        fmt += 2;
+        return fmt;
+    }
+
+    /* size modifier */
+    if (fmt[1] != '}') {
+        size_mod = *fmt++;
+        switch (size_mod) {
+        case 'b':
+        case 'h':
+        case 'w':
+        case 'q':
+            break;
+        default:
+            return NULL;
+        }
+    }
+
+    switch (fmt[0]) {
+    case 'd':
+    case 'u':
+    case 'b':
+    case 'o':
+    case 'x':
+    case 'X':
+    {
+        char mode = *fmt++;
+        i64 num = load_num(size_mod, list);
+        int test = print_num(num, mode);
+        if (test == 0)
+            return null;
+        *wrote += test - 1;
     }
     }
 
     return fmt;
 }
 
-static int print_num(int num, char mode)
+static int print_num(i64 num, char mode)
 {
     char tmp[64] = { 0 };
     char *iter = tmp + 63;
@@ -227,17 +251,61 @@ static int print_num(int num, char mode)
 
     switch (mode) {
     case 'x':
+    case 'X':
     {
-        unsigned int n = num;
+        u64 n = num;
+        char x_c = mode == 'x' ? 'a' : 'A';
 
         while (n > 0) {
             int rem = n % 16;
-            if (n < 10)
+            if (rem < 10)
                 *iter-- = '0' + rem;
             else
-                *iter-- = 'a' + (rem - 10);
+                *iter-- = x_c + (rem - 10);
             wrote++;
             n /= 16;
+        }
+        iter++;
+
+        break;
+    }
+    case 'b':
+    {
+        u64 n = num;
+
+        while (n > 0) {
+            for (int i = 0; i < 8; i++) {
+                *iter-- = (n & (1 << i)) ? '1' : '0';
+                wrote++;
+            }
+
+            n >>= 8;
+        }
+        iter++;
+
+        break;
+    }
+    case 'o':
+    {
+        u64 n = num;
+
+        while (n > 0) {
+            *iter-- = '0' + (n % 8);
+            wrote++;
+            n /= 8;
+        }
+        iter++;
+
+        break;
+    }
+    case 'u':
+    {
+        u64 n = num;
+
+        while (n > 0) {
+            *iter-- = '0' + (n % 10);
+            wrote++;
+            n /= 10;
         }
         iter++;
 
@@ -326,4 +394,20 @@ static bool flush_current()
     }
 
     return false;
+}
+
+static i64 load_num(char size, va_list list)
+{
+    switch (size) {
+    case 'b':
+        return va_arg(list, i32) & 0xFF;
+    case 'h':
+        return va_arg(list, i32) & 0xFFFF;
+    case 'w':
+        return va_arg(list, i32) & 0xFFFFFFFF;
+    case 'q':
+        return va_arg(list, i64);
+    }
+
+    return 0;
 }
