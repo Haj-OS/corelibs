@@ -4,6 +4,6 @@
 
 int main()
 {
-    print("{b}\n", 0x896ed9);
+    print("{p}\n", 0xFFFFFFFFFFFFFFFF);
     return 0;
 }

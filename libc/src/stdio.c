@@ -191,12 +191,12 @@ static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
     /* expect s */
     if (fmt[0] == '*') {
         if (fmt[1] != 's')
-            return NULL;
+            return null;
 
         int len = va_arg(list, int);
         int test = print_str(va_arg(list, char*), len);
         if (test == 0)
-            return NULL;
+            return null;
         
         *wrote += test;
         fmt += 2;
@@ -213,7 +213,7 @@ static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
         case 'q':
             break;
         default:
-            return NULL;
+            return null;
         }
     }
 
@@ -224,13 +224,35 @@ static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
     case 'o':
     case 'x':
     case 'X':
+    case 'p':
     {
         char mode = *fmt++;
+        if (mode == 'p')
+            size_mod = 'q';
         i64 num = load_num(size_mod, list);
         int test = print_num(num, mode);
         if (test == 0)
             return null;
         *wrote += test - 1;
+        break;
+    }
+    case 'c':
+    {
+        fmt++;
+        char num = load_num('b', list);
+        if (!putc(num))
+            return null;
+        *wrote += 1;
+        break;
+    }
+    case 's':
+    {
+        fmt++;
+        int test = print_str(va_arg(list, char*), 0);
+        if (test == 0)
+            return NULL;
+        *wrote += test;
+        break;
     }
     }
 
@@ -250,11 +272,12 @@ static int print_num(i64 num, char mode)
     }
 
     switch (mode) {
+    case 'p':
     case 'x':
     case 'X':
     {
         u64 n = num;
-        char x_c = mode == 'x' ? 'a' : 'A';
+        char x_c = mode == 'X' ? 'A' : 'a';
 
         while (n > 0) {
             int rem = n % 16;
@@ -266,6 +289,12 @@ static int print_num(i64 num, char mode)
             n /= 16;
         }
         iter++;
+
+        if (mode == 'p') {
+            *iter-- = 'x';
+            *iter-- = '0';
+            wrote += 2;
+        }
 
         break;
     }
