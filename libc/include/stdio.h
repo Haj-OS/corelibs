@@ -24,7 +24,7 @@
  * x - int (hexadecimal) (X for uppercase)
  * c - char
  * s - string, or {*s}
- * a - slice, optional style (one of d, b, o, x, s) e.g. {ax}, {as}
+ * a - slice, optional style (same as mode) e.g. {ax}, {as}
  * p - pointer
  */
 int print(const char *fmt, ...);

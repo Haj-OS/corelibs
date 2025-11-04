@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <slice.h>
 
 #ifdef BUFSIZ
 #undef BUFSIZ
@@ -48,6 +49,7 @@ static const char* handle_fmt(const char *fmt, int *wrote, va_list list);
 /* returns 0 when ran out of space */
 static int print_num(int64_t num, char mode);
 static int print_str(const char *str, int optional_len);
+static int print_slice(struct slice slice, char mode);
 /* return false when ran out of space */
 static bool putc(char c);
 static bool flush_current();
@@ -187,6 +189,7 @@ static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
         return fmt;
 
     char size_mod = 'w';
+    char cmp = 0; /* for slice */
 
     /* expect s */
     if (fmt[0] == '*') {
@@ -211,13 +214,15 @@ static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
         case 'h':
         case 'w':
         case 'q':
+        case 'a':
             break;
         default:
             return null;
         }
     }
 
-    switch (fmt[0]) {
+    cmp = fmt[0];
+    switch (cmp) {
     case 'd':
     case 'u':
     case 'b':
@@ -226,6 +231,8 @@ static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
     case 'X':
     case 'p':
     {
+        if (size_mod == 'a')
+            goto slice;
         char mode = *fmt++;
         if (mode == 'p')
             size_mod = 'q';
@@ -238,6 +245,8 @@ static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
     }
     case 'c':
     {
+        if (size_mod == 'a')
+            goto slice;
         fmt++;
         char num = load_num('b', list);
         if (!putc(num))
@@ -247,10 +256,23 @@ static const char* handle_fmt(const char *fmt, int *wrote, va_list list)
     }
     case 's':
     {
+        if (size_mod == 'a')
+            goto slice;
         fmt++;
         int test = print_str(va_arg(list, char*), 0);
         if (test == 0)
-            return NULL;
+            return null;
+        *wrote += test;
+        break;
+    }
+    case 'a':
+    {
+        fmt++;
+slice:
+        size_mod = cmp == 'a' ? 'u' : *fmt++;
+        int test = print_slice(va_arg(list, struct slice), size_mod);
+        if (test == 0)
+            return null;
         *wrote += test;
         break;
     }
@@ -266,7 +288,7 @@ static int print_num(i64 num, char mode)
     int wrote = 0;
     bool sign = false;
 
-    if (num == 0) {
+    if (num == 0 && mode != 'c') {
         *iter-- = '0';
         wrote++;
     }
@@ -288,13 +310,14 @@ static int print_num(i64 num, char mode)
             wrote++;
             n /= 16;
         }
-        iter++;
 
         if (mode == 'p') {
             *iter-- = 'x';
             *iter-- = '0';
             wrote += 2;
         }
+
+        iter++;
 
         break;
     }
@@ -358,6 +381,13 @@ static int print_num(i64 num, char mode)
             *iter = '-';
             wrote++;
         }
+        break;
+    case 'c':
+        *iter-- = '\'';
+        *iter-- = num & 0xFF;
+        *iter-- = '\'';
+        iter++;
+        wrote += 3;
         break;
     }
 
@@ -423,6 +453,44 @@ static bool flush_current()
     }
 
     return false;
+}
+
+static int print_slice(struct slice slice, char mode)
+{
+    int wrote = 0;
+    usize i;
+    u8 *ptr = slice.ptr;
+
+    if (mode == 's')
+        return print_str((char*) ptr, slice.len);
+
+    if (!putc('{'))
+        return 0;
+
+    wrote++;
+    for (i = 0; i < slice.len - 1; i++) {
+        int test = print_num(ptr[i], mode);
+        if (test == 0)
+            return 0;
+
+        wrote += test - 1;
+
+        if (!putc(',') || !putc(' '))
+            return 0;
+
+        wrote += 2;
+    }
+
+    int test = print_num(ptr[i], mode);
+    if (test == 0)
+        return 0;
+    wrote += test - 1;
+
+    if (!putc('}'))
+        return 0;
+
+    wrote++;
+    return wrote;
 }
 
 static i64 load_num(char size, va_list list)
