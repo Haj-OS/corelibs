@@ -2,6 +2,7 @@
 #include <stdalign.h>
 #include <alloc/buffer.h>
 #include <slice.h>
+#include <stdlib.h>
 
 int main()
 {
@@ -21,5 +22,7 @@ int main()
     print("{as}\n", s);
     print("{aa}\n", s);
     print("{ap}\n", s);
+
+    exit(1);
     return 0;
 }

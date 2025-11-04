@@ -8,10 +8,10 @@ void *rmemcpy(void *dst, const void *src, usize n);
 void *memmove(void *dst, const void *src, usize n);
 void *memset(void *s, int v, usize n);
 void *memchr(const void *s, int c, usize n);
-void *memrchr(void *s, int c, long n);
+void *memrchr(void *s, int c, usize n);
 int memcmp(const void *s1, const void *s2, usize n);
 
-char *strchr(const char *s, int c);
+char *strchr(const char *s, int ch);
 char *strrchr(const char *s, int ch);
 char *strchrnul(const char *s, int ch, usize n);
 usize strlen(const char *s);
