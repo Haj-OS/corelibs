@@ -1,4 +1,3 @@
-*.o
 arch/*/syscalls.s
 gensyscalls
 test
