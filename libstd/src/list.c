@@ -2,6 +2,8 @@
 #include <string.h>
 
 void list_init(struct list *list, struct alloc* alloc, usize item_size) {
+    list->head = NULL;
+    list->tail = NULL;
     list->alloc = alloc;
     list->item_size = item_size;
 }
@@ -13,7 +15,8 @@ void list_free(struct list* list) {
         idx = next;
     }
     list->size = 0;
-    list->item_size = 0;
+    list->head = NULL;
+    list->tail = NULL;
 }
 
 struct list_node* list_push(struct list* list, void* data) {
