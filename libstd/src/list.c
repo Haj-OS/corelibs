@@ -48,6 +48,10 @@ void list_remove(struct list* list, struct list_node* at) {
         list->head = at->next;
     if(list->tail == at)
         list->tail = at->prev;
+    if(at->prev)
+        at->prev->next = at->next;
+    if(at->next)
+        at->next->prev = at->prev;
     alloc_free(list->alloc,at);
     list->size--;
 }
